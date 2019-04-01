@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 Token = namedtuple('Token', 'expiredate access_token token_type scope')
+SimpleToken = namedtuple('SimpleToken', 'access_token')
 
 
 class ApiAuthBase(AuthBase):
@@ -120,4 +121,17 @@ class OAuthToken(ApiAuthBase):
     def __call__(self, request):
         if request.url != self.url_token:
             request.headers[str('Authorization')] = str("Bearer %s" % self.token.access_token)
+        return request
+
+class SimpleTokenAuth(ApiAuthBase):
+
+    def __init__(self, databasewrapper, settings_dict):
+        super(SimpleTokenAuth, self).__init__(databasewrapper, settings_dict)
+        try:
+            self.token = SimpleToken(settings_dict["SIMPLETOKEN"])
+        except KeyError:
+            raise ProgrammingError("No Simple Token (SIMPLETOKEN) configured in database settings for API")
+
+    def __call__(self, request):
+        request.headers[str('Authorization')] = str("Token %s" % self.token.access_token)
         return request
